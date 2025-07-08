@@ -208,6 +208,11 @@ export default function GamePage() {
   
   const handleRematch = async () => {
     try {
+      // Reset game state first
+      setShowVictory(false);
+      setHighlightedCells([]);
+      setIsProcessingMove(false);
+      
       const newGame = await Game.create({
         board: Array(6).fill(null).map(() => Array(6).fill("")),
         current_player: "red",
@@ -218,7 +223,11 @@ export default function GamePage() {
         status: "playing"
       });
       
-      navigate(createPageUrl("Game") + `?id=${newGame.id}`);
+      // Update the current game state with the new game
+      setGame(newGame);
+      
+      // Update the URL without triggering a full navigation
+      window.history.replaceState(null, '', createPageUrl("Game") + `?id=${newGame.id}`);
     } catch (error) {
       console.error("Error starting rematch:", error);
     }
