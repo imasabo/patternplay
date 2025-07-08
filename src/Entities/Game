@@ -1,0 +1,90 @@
+{
+  "name": "Game",
+  "type": "object",
+  "properties": {
+    "board": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "enum": [
+            "",
+            "red",
+            "blue"
+          ]
+        }
+      },
+      "description": "6x6 game board state"
+    },
+    "current_player": {
+      "type": "string",
+      "enum": [
+        "red",
+        "blue"
+      ],
+      "default": "red"
+    },
+    "game_mode": {
+      "type": "string",
+      "enum": [
+        "pvp",
+        "ai"
+      ],
+      "default": "pvp"
+    },
+    "grid_size": {
+      "type": "number",
+      "default": 6
+    },
+    "pattern_pack": {
+      "type": "string",
+      "default": "classic"
+    },
+    "allow_pattern_refresh": {
+      "type": "boolean",
+      "default": false
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "setup",
+        "playing",
+        "finished"
+      ],
+      "default": "setup"
+    },
+    "winner": {
+      "type": "string",
+      "enum": [
+        "red",
+        "blue",
+        ""
+      ],
+      "default": ""
+    },
+    "winning_pattern": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "positions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "row": {
+                "type": "number"
+              },
+              "col": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": []
+}
