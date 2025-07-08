@@ -287,14 +287,14 @@ export default function GamePage() {
         </div>
         
         {/* Game Area */}
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid lg:grid-cols-3 gap-4 lg:gap-6">
           {/* Left Side - Patterns */}
-          <div className="lg:order-1">
+          <div className="lg:order-1 order-2">
             <PatternDisplay patterns={patterns} />
           </div>
           
           {/* Center - Game Board */}
-          <div className="lg:order-2 space-y-4">
+          <div className="lg:order-2 order-1 space-y-4">
             <PlayerIndicator 
               currentPlayer={game.current_player} 
               gameMode={game.game_mode}
@@ -309,7 +309,7 @@ export default function GamePage() {
           </div>
           
           {/* Right Side - Game Info */}
-          <div className="lg:order-3">
+          <div className="lg:order-3 order-3">
             <div className="game-card rounded-2xl p-4 shadow-xl">
               <h3 className="text-lg font-semibold text-slate-100 mb-4">Game Info</h3>
               <div className="space-y-3 text-sm">

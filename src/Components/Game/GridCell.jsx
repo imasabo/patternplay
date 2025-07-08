@@ -23,10 +23,11 @@ export default function GridCell({
   
   return (
     <motion.div
-      className={`${sizes[size]} grid-cell rounded-lg cursor-pointer relative overflow-hidden ${
+      className={`${sizes[size]} grid-cell rounded-lg cursor-pointer relative overflow-hidden touch-manipulation ${
         isHighlighted ? "ring-2 ring-amber-400 ring-opacity-60" : ""
       }`}
       onClick={handleClick}
+      onTouchStart={(e) => e.preventDefault()}
       whileHover={value === "" ? { scale: 1.05 } : {}}
       whileTap={value === "" ? { scale: 0.95 } : {}}
       transition={{ type: "spring", stiffness: 400, damping: 10 }}
