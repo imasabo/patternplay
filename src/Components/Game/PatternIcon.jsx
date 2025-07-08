@@ -1,5 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
+import { PATTERN_BANK } from "../../utils/patterns.js";
 
 export default function PatternIcon({ pattern, size = "medium", isActive = false }) {
   const sizes = {
@@ -8,30 +9,8 @@ export default function PatternIcon({ pattern, size = "medium", isActive = false
     large: "w-16 h-16"
   };
   
-  const patterns = {
-    L: [
-      [1, 0, 0],
-      [1, 0, 0],
-      [1, 1, 1]
-    ],
-    T: [
-      [1, 1, 1],
-      [0, 1, 0],
-      [0, 1, 0]
-    ],
-    Z: [
-      [1, 1, 0],
-      [0, 1, 1],
-      [0, 0, 0]
-    ],
-    Plus: [
-      [0, 1, 0],
-      [1, 1, 1],
-      [0, 1, 0]
-    ]
-  };
-  
-  const patternGrid = patterns[pattern] || patterns.L;
+  const patternData = PATTERN_BANK[pattern];
+  const patternGrid = patternData ? patternData.display : PATTERN_BANK.L.display;
   
   return (
     <motion.div 

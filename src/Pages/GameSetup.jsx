@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils.js";
 import { Game } from "../entities/Game.js";
+import { getShuffledClassicPatterns } from "../utils/patterns.js";
 import GameLogo from "../components/game/GameLogo.jsx";
 import GameButton from "../components/game/GameButton.jsx";
 import PatternIcon from "../components/game/PatternIcon.jsx";
@@ -15,17 +16,16 @@ export default function GameSetup() {
   
   const [gameMode, setGameMode] = useState(initialMode);
   const [gridSize, setGridSize] = useState(6);
-  const [patternPack, setPatternPack] = useState("classic");
   const [allowPatternRefresh, setAllowPatternRefresh] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
-  
-  const patternPacks = {
-    classic: ["L", "T", "Z", "Plus"],
-    advanced: ["L", "T", "Z", "Plus"]
-  };
+  const [currentPatterns, setCurrentPatterns] = useState(getShuffledClassicPatterns());
   
   const createEmptyBoard = (size) => {
     return Array(size).fill(null).map(() => Array(size).fill(""));
+  };
+  
+  const handleShufflePatterns = () => {
+    setCurrentPatterns(getShuffledClassicPatterns());
   };
   
   const handleStartGame = async () => {
@@ -37,7 +37,8 @@ export default function GameSetup() {
         current_player: "red",
         game_mode: gameMode,
         grid_size: gridSize,
-        pattern_pack: patternPack,
+        pattern_pack: "classic",
+        patterns: currentPatterns, // Save the selected patterns
         allow_pattern_refresh: allowPatternRefresh,
         status: "playing"
       });
@@ -115,17 +116,25 @@ export default function GameSetup() {
             <div className="text-xs text-slate-400 text-center">Standard competitive size</div>
           </div>
           
-          {/* Pattern Pack Preview */}
+          {/* Patterns Preview */}
           <div className="space-y-3">
-            <label className="block text-sm font-medium text-slate-300">Pattern Pack</label>
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-medium text-slate-300">Game Patterns</label>
+              <button
+                onClick={handleShufflePatterns}
+                className="p-2 rounded-lg bg-slate-700/50 text-slate-400 hover:text-amber-400 transition-colors"
+                title="Shuffle patterns"
+              >
+                <Shuffle className="w-4 h-4" />
+              </button>
+            </div>
             <div className="bg-slate-800/50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-slate-100">Classic Pack</span>
-                <span className="text-xs text-slate-400">4 patterns</span>
+              <div className="text-center mb-3">
+                <p className="text-sm text-slate-400">Complete any of these 2 patterns to win</p>
               </div>
-              <div className="grid grid-cols-4 gap-2">
-                {patternPacks[patternPack].map((pattern) => (
-                  <PatternIcon key={pattern} pattern={pattern} size="small" />
+              <div className="grid grid-cols-2 gap-3 justify-items-center">
+                {currentPatterns.map((pattern) => (
+                  <PatternIcon key={pattern} pattern={pattern} size="medium" />
                 ))}
               </div>
             </div>

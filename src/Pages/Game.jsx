@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils.js";
 import { Game } from "../entities/Game.js";
 import { InvokeLLM } from "../integrations/Core.js";
+import { checkWinCondition } from "../utils/patterns.js";
 import GameBoard from "../components/game/GameBoard.jsx";
 import PatternDisplay from "../components/game/PatternDisplay.jsx";
 import PlayerIndicator from "../components/game/PlayerIndicator.jsx";
@@ -19,10 +20,10 @@ export default function GamePage() {
   const [game, setGame] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showVictory, setShowVictory] = useState(false);
+  const [showDraw, setShowDraw] = useState(false);
   const [isProcessingMove, setIsProcessingMove] = useState(false);
   const [highlightedCells, setHighlightedCells] = useState([]);
-  
-  const patterns = ["L", "T", "Z", "Plus"];
+  const [patterns, setPatterns] = useState([]);
   
   useEffect(() => {
     loadGame();
@@ -40,6 +41,14 @@ export default function GamePage() {
       
       if (currentGame) {
         setGame(currentGame);
+        // Load patterns from game data or use default
+        if (currentGame.patterns) {
+          setPatterns(currentGame.patterns);
+        } else {
+          // Fallback to classic patterns if not set
+          setPatterns(["L", "T", "Z", "Plus"]);
+        }
+        
         if (currentGame.status === "finished") {
           setShowVictory(true);
           if (currentGame.winning_pattern && currentGame.winning_pattern.positions) {
@@ -57,56 +66,12 @@ export default function GamePage() {
     }
   };
   
-  const checkWinCondition = (board, player) => {
-    const winPatterns = {
-      L: [
-        [{r: 0, c: 0}, {r: 1, c: 0}, {r: 2, c: 0}, {r: 2, c: 1}],
-        [{r: 0, c: 0}, {r: 0, c: 1}, {r: 0, c: 2}, {r: 1, c: 0}],
-        [{r: 0, c: 1}, {r: 1, c: 1}, {r: 2, c: 1}, {r: 2, c: 0}],
-        [{r: 1, c: 0}, {r: 1, c: 1}, {r: 1, c: 2}, {r: 0, c: 2}]
-      ],
-      T: [
-        [{r: 0, c: 0}, {r: 0, c: 1}, {r: 0, c: 2}, {r: 1, c: 1}],
-        [{r: 0, c: 1}, {r: 1, c: 0}, {r: 1, c: 1}, {r: 2, c: 1}],
-        [{r: 1, c: 0}, {r: 1, c: 1}, {r: 1, c: 2}, {r: 0, c: 1}],
-        [{r: 0, c: 0}, {r: 1, c: 0}, {r: 2, c: 0}, {r: 1, c: 1}]
-      ],
-      Z: [
-        [{r: 0, c: 0}, {r: 0, c: 1}, {r: 1, c: 1}, {r: 1, c: 2}],
-        [{r: 0, c: 1}, {r: 1, c: 0}, {r: 1, c: 1}, {r: 2, c: 0}],
-        [{r: 1, c: 0}, {r: 1, c: 1}, {r: 2, c: 1}, {r: 2, c: 2}],
-        [{r: 0, c: 2}, {r: 1, c: 1}, {r: 1, c: 2}, {r: 2, c: 1}]
-      ],
-      Plus: [
-        [{r: 0, c: 1}, {r: 1, c: 0}, {r: 1, c: 1}, {r: 1, c: 2}, {r: 2, c: 1}]
-      ]
-    };
-    
-    for (const [patternName, variations] of Object.entries(winPatterns)) {
-      for (const variation of variations) {
-        for (let startRow = 0; startRow <= board.length - 3; startRow++) {
-          for (let startCol = 0; startCol <= board[0].length - 3; startCol++) {
-            const match = variation.every(pos => {
-              const row = startRow + pos.r;
-              const col = startCol + pos.c;
-              return row < board.length && col < board[0].length && board[row][col] === player;
-            });
-            
-            if (match) {
-              return {
-                pattern: patternName,
-                positions: variation.map(pos => ({
-                  row: startRow + pos.r,
-                  col: startCol + pos.c
-                }))
-              };
-            }
-          }
-        }
-      }
-    }
-    
-    return null;
+  const checkWinConditionLocal = (board, player) => {
+    return checkWinCondition(board, player, patterns);
+  };
+  
+  const isBoardFull = (board) => {
+    return board.every(row => row.every(cell => cell !== ""));
   };
   
   const handleCellClick = async (row, col) => {
@@ -118,7 +83,7 @@ export default function GamePage() {
       const newBoard = game.board.map(boardRow => [...boardRow]);
       newBoard[row][col] = game.current_player;
       
-      const winResult = checkWinCondition(newBoard, game.current_player);
+      const winResult = checkWinConditionLocal(newBoard, game.current_player);
       
       if (winResult) {
         setHighlightedCells(winResult.positions);
@@ -130,6 +95,15 @@ export default function GamePage() {
         });
         setGame(updatedGame);
         setShowVictory(true);
+      } else if (isBoardFull(newBoard)) {
+        // Check for draw - board is full with no winner
+        const updatedGame = await Game.update(game.id, {
+          board: newBoard,
+          status: "finished",
+          winner: null
+        });
+        setGame(updatedGame);
+        setShowDraw(true);
       } else {
         const nextPlayer = game.current_player === "red" ? "blue" : "red";
         const updatedGame = await Game.update(game.id, {
@@ -153,7 +127,7 @@ export default function GamePage() {
     try {
       const prompt = `You are playing PatternPlay, a strategic game. The current board state is: ${JSON.stringify(currentBoard)}. 
       
-      You are the blue player (squares). Available patterns to win: L, T, Z, Plus shapes.
+      You are the blue player (squares). Available patterns to win: ${patterns.join(", ")} shapes.
       
       Rules:
       - Each pattern requires 4-5 connected cells
@@ -181,7 +155,7 @@ export default function GamePage() {
         const newBoard = currentBoard.map(boardRow => [...boardRow]);
         newBoard[row][col] = "blue";
         
-        const winResult = checkWinCondition(newBoard, "blue");
+        const winResult = checkWinConditionLocal(newBoard, "blue");
         
         if (winResult) {
           setHighlightedCells(winResult.positions);
@@ -193,6 +167,15 @@ export default function GamePage() {
           });
           setGame(updatedGame);
           setShowVictory(true);
+        } else if (isBoardFull(newBoard)) {
+          // Check for draw - board is full with no winner
+          const updatedGame = await Game.update(game.id, {
+            board: newBoard,
+            status: "finished",
+            winner: null
+          });
+          setGame(updatedGame);
+          setShowDraw(true);
         } else {
           const updatedGame = await Game.update(game.id, {
             board: newBoard,
@@ -210,6 +193,7 @@ export default function GamePage() {
     try {
       // Reset game state first
       setShowVictory(false);
+      setShowDraw(false);
       setHighlightedCells([]);
       setIsProcessingMove(false);
       
@@ -219,6 +203,7 @@ export default function GamePage() {
         game_mode: game.game_mode,
         grid_size: game.grid_size,
         pattern_pack: game.pattern_pack,
+        patterns: patterns, // Keep the same patterns for rematch
         allow_pattern_refresh: game.allow_pattern_refresh,
         status: "playing"
       });
@@ -361,6 +346,54 @@ export default function GamePage() {
                 <GameBoard 
                   board={game.board}
                   highlightedCells={highlightedCells}
+                  onCellClick={null}
+                  size="small"
+                />
+              </div>
+              
+              <div className="flex gap-3 justify-center">
+                <GameButton onClick={handleRematch}>
+                  <RotateCcw className="w-4 h-4" />
+                  Rematch
+                </GameButton>
+                <GameButton 
+                  variant="secondary"
+                  onClick={() => navigate(createPageUrl("MainMenu"))}
+                >
+                  Menu
+                </GameButton>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Draw Modal */}
+      <AnimatePresence>
+        {showDraw && (
+          <motion.div 
+            className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div 
+              className="game-card rounded-2xl p-8 max-w-md w-full text-center"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+            >
+              <h2 className="text-3xl font-bold text-slate-100 mb-2">
+                It's a Draw!
+              </h2>
+              
+              <p className="text-slate-400 mb-6">
+                The board is full with no winning patterns
+              </p>
+              
+              <div className="mb-6 flex justify-center">
+                <GameBoard 
+                  board={game.board}
                   onCellClick={null}
                   size="small"
                 />

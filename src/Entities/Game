@@ -41,6 +41,13 @@
       "type": "string",
       "default": "classic"
     },
+    "patterns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Array of pattern names selected for this game"
+    },
     "allow_pattern_refresh": {
       "type": "boolean",
       "default": false

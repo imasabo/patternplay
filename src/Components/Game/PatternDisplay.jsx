@@ -18,7 +18,7 @@ export default function PatternDisplay({
         <p className="text-sm text-slate-400">Complete any pattern to win</p>
       </div>
       
-      <div className="grid grid-cols-2 gap-3">
+      <div className="flex justify-center gap-4">
         {patterns.map((pattern, index) => (
           <motion.div
             key={pattern}

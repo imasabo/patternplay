@@ -97,6 +97,9 @@ export default function HowToPlay() {
                 </div>
               ))}
             </div>
+            <p className="text-xs text-slate-400 mt-4 text-center">
+              Each game randomly selects 2 patterns from the 4 classic patterns. Shuffle them before starting for variety!
+            </p>
           </motion.div>
           
           {/* Pro Tips */}
