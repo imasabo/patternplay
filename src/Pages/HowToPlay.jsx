@@ -24,7 +24,7 @@ export default function HowToPlay() {
     {
       icon: Zap,
       title: "Gameplay",
-      description: "Take turns placing your symbol. Red circles for Player 1, blue squares for Player 2. First to complete a pattern wins!"
+      description: "Take turns placing your symbol. Player 1 uses circles (Red→Orange), Player 2 uses squares (Purple→Green). Colors alternate every turn. Complete a pattern with uniform color to win!"
     }
   ];
   
@@ -89,16 +89,16 @@ export default function HowToPlay() {
             <h3 className="text-xl font-semibold text-slate-100 mb-4 text-center">Win Patterns</h3>
             <p className="text-slate-300 text-center mb-6">Complete any of these patterns to win the game</p>
             
-            <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto">
-              {["L", "T", "Z", "Plus"].map((pattern) => (
+            <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
+              {["L", "T", "Z", "Plus", "X"].map((pattern) => (
                 <div key={pattern} className="text-center">
-                  <PatternIcon pattern={pattern} size="large" />
+                  <PatternIcon pattern={pattern} size="medium" />
                   <p className="text-sm text-slate-400 mt-2">{pattern}-Shape</p>
                 </div>
               ))}
             </div>
             <p className="text-xs text-slate-400 mt-4 text-center">
-              Each game randomly selects 2 patterns from the 4 classic patterns. Shuffle them before starting for variety!
+              Each game randomly selects 2 patterns from the 5 classic patterns. Shuffle them before starting for variety!
             </p>
           </motion.div>
           

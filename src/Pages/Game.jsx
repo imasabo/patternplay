@@ -5,7 +5,17 @@ import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils.js";
 import { Game } from "../entities/Game.js";
 import { InvokeLLM } from "../integrations/Core.js";
-import { checkWinCondition } from "../utils/patterns.js";
+import { checkWinConditionAnyColor } from "../utils/patterns.js";
+import { 
+  convertLegacyBoard, 
+  createTile, 
+  getCurrentColor, 
+  getCurrentColorName,
+  getNextColor,
+  getNextColorName,
+  getPlayerName,
+  PLAYER_CONFIG 
+} from "../utils/colorRotation.js";
 import GameBoard from "../components/game/GameBoard.jsx";
 import PatternDisplay from "../components/game/PatternDisplay.jsx";
 import PlayerIndicator from "../components/game/PlayerIndicator.jsx";
@@ -24,6 +34,7 @@ export default function GamePage() {
   const [isProcessingMove, setIsProcessingMove] = useState(false);
   const [highlightedCells, setHighlightedCells] = useState([]);
   const [patterns, setPatterns] = useState([]);
+  const [turnCount, setTurnCount] = useState(0);
   
   useEffect(() => {
     loadGame();
@@ -40,7 +51,12 @@ export default function GamePage() {
       const currentGame = gameData.find(g => g.id === gameId);
       
       if (currentGame) {
-        setGame(currentGame);
+        // Convert legacy board format if needed
+        const convertedBoard = convertLegacyBoard(currentGame.board);
+        const updatedGame = { ...currentGame, board: convertedBoard };
+        
+        setGame(updatedGame);
+        
         // Load patterns from game data or use default
         if (currentGame.patterns) {
           setPatterns(currentGame.patterns);
@@ -48,6 +64,10 @@ export default function GamePage() {
           // Fallback to classic patterns if not set
           setPatterns(["L", "T", "Z", "Plus"]);
         }
+        
+        // Calculate turn count based on filled cells
+        const filledCells = convertedBoard.flat().filter(cell => cell !== null && cell !== "").length;
+        setTurnCount(filledCells);
         
         if (currentGame.status === "finished") {
           setShowVictory(true);
@@ -67,11 +87,15 @@ export default function GamePage() {
   };
   
   const checkWinConditionLocal = (board, player) => {
-    return checkWinCondition(board, player, patterns);
+    return checkWinConditionAnyColor(board, player, patterns);
   };
   
   const isBoardFull = (board) => {
-    return board.every(row => row.every(cell => cell !== ""));
+    return board.every(row => row.every(cell => {
+      // Check if cell is empty
+      return cell !== null && cell !== undefined && cell !== "" && 
+             (typeof cell !== 'object' || (cell.player && cell.color));
+    }));
   };
   
   const handleCellClick = async (row, col) => {
@@ -81,7 +105,8 @@ export default function GamePage() {
     
     try {
       const newBoard = game.board.map(boardRow => [...boardRow]);
-      newBoard[row][col] = game.current_player;
+      const currentTile = createTile(game.current_player, turnCount);
+      newBoard[row][col] = currentTile;
       
       const winResult = checkWinConditionLocal(newBoard, game.current_player);
       
@@ -106,14 +131,17 @@ export default function GamePage() {
         setShowDraw(true);
       } else {
         const nextPlayer = game.current_player === "red" ? "blue" : "red";
+        const newTurnCount = turnCount + 1;
+        
         const updatedGame = await Game.update(game.id, {
           board: newBoard,
           current_player: nextPlayer
         });
         setGame(updatedGame);
+        setTurnCount(newTurnCount);
         
         if (game.game_mode === "ai" && nextPlayer === "blue") {
-          setTimeout(() => handleAIMove(newBoard), 1000);
+          setTimeout(() => handleAIMove(newBoard, newTurnCount), 1000);
         }
       }
     } catch (error) {
@@ -123,7 +151,7 @@ export default function GamePage() {
     }
   };
   
-  const handleAIMove = async (currentBoard) => {
+  const handleAIMove = async (currentBoard, currentTurnCount) => {
     try {
       const prompt = `You are playing PatternPlay, a strategic game. The current board state is: ${JSON.stringify(currentBoard)}. 
       
@@ -134,6 +162,7 @@ export default function GamePage() {
       - You can win by completing any pattern
       - Block the red player from winning
       - Look for strategic opportunities
+      - Colors alternate every turn for each player
       
       Analyze the board and choose your next move. Return the row and column (0-5) as a JSON object.`;
       
@@ -151,9 +180,10 @@ export default function GamePage() {
       
       const { row, col } = aiResponse;
       
-      if (row >= 0 && row < 6 && col >= 0 && col < 6 && currentBoard[row][col] === "") {
+      if (row >= 0 && row < 6 && col >= 0 && col < 6 && (!currentBoard[row][col] || currentBoard[row][col] === "")) {
         const newBoard = currentBoard.map(boardRow => [...boardRow]);
-        newBoard[row][col] = "blue";
+        const aiTile = createTile("blue", currentTurnCount);
+        newBoard[row][col] = aiTile;
         
         const winResult = checkWinConditionLocal(newBoard, "blue");
         
@@ -177,11 +207,13 @@ export default function GamePage() {
           setGame(updatedGame);
           setShowDraw(true);
         } else {
+          const newTurnCount = currentTurnCount + 1;
           const updatedGame = await Game.update(game.id, {
             board: newBoard,
             current_player: "red"
           });
           setGame(updatedGame);
+          setTurnCount(newTurnCount);
         }
       }
     } catch (error) {
@@ -196,6 +228,7 @@ export default function GamePage() {
       setShowDraw(false);
       setHighlightedCells([]);
       setIsProcessingMove(false);
+      setTurnCount(0);
       
       const newGame = await Game.create({
         board: Array(6).fill(null).map(() => Array(6).fill("")),
@@ -284,6 +317,7 @@ export default function GamePage() {
               currentPlayer={game.current_player} 
               gameMode={game.game_mode}
               isGameActive={game.status === "playing"}
+              turnCount={turnCount}
             />
             
             <GameBoard 
@@ -334,8 +368,7 @@ export default function GamePage() {
               exit={{ opacity: 0, scale: 0.9 }}
             >
               <h2 className="text-3xl font-bold text-slate-100 mb-2">
-                {game.winner === "red" ? "Player 1" : 
-                 game.game_mode === "ai" && game.winner === "blue" ? "AI Player" : "Player 2"} Wins!
+                {getPlayerName(game.winner)} Wins!
               </h2>
               
               <p className="text-slate-400 mb-6">

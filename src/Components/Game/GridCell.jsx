@@ -16,10 +16,24 @@ export default function GridCell({
   };
   
   const handleClick = () => {
-    if (value === "" && onClick) {
+    if ((!value || value === "") && onClick) {
       onClick(row, col);
     }
   };
+  
+  // Handle legacy string format for backward compatibility
+  const isLegacyFormat = typeof value === 'string' && (value === 'red' || value === 'blue');
+  
+  // Get tile properties
+  const tileColor = isLegacyFormat 
+    ? (value === 'red' ? '#FF4136' : '#B10DC9')
+    : (value?.color || '#666666');
+  
+  const tileShape = isLegacyFormat 
+    ? (value === 'red' ? 'circle' : 'square')
+    : (value?.shape || 'circle');
+  
+  const isEmpty = !value || value === "" || value === null;
   
   return (
     <motion.div
@@ -28,29 +42,23 @@ export default function GridCell({
       }`}
       onClick={handleClick}
       onTouchStart={(e) => e.preventDefault()}
-      whileHover={value === "" ? { scale: 1.05 } : {}}
-      whileTap={value === "" ? { scale: 0.95 } : {}}
+      whileHover={isEmpty ? { scale: 1.05 } : {}}
+      whileTap={isEmpty ? { scale: 0.95 } : {}}
       transition={{ type: "spring", stiffness: 400, damping: 10 }}
     >
-      {value === "red" && (
+      {!isEmpty && (
         <motion.div 
-          className="w-full h-full bg-red-500 rounded-full shadow-lg"
+          className={`w-full h-full shadow-lg ${
+            tileShape === 'circle' ? 'rounded-full' : 'rounded-lg'
+          }`}
+          style={{ backgroundColor: tileColor }}
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: "spring", stiffness: 600, damping: 20 }}
         />
       )}
       
-      {value === "blue" && (
-        <motion.div 
-          className="w-full h-full bg-blue-500 rounded-lg shadow-lg"
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ type: "spring", stiffness: 600, damping: 20 }}
-        />
-      )}
-      
-      {value === "" && (
+      {isEmpty && (
         <div className="absolute inset-0 bg-gradient-to-br from-slate-600/20 to-slate-700/20 rounded-lg" />
       )}
     </motion.div>

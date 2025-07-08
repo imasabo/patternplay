@@ -116,4 +116,61 @@ export function checkWinCondition(board, player, patterns) {
     if (result) return result;
   }
   return null;
+}
+
+// New color-aware pattern checking functions
+export function checkPatternWinWithColor(board, player, patternName, targetColor) {
+  const pattern = PATTERN_BANK[patternName];
+  if (!pattern) return null;
+  
+  for (const variation of pattern.variations) {
+    for (let startRow = 0; startRow <= board.length - 3; startRow++) {
+      for (let startCol = 0; startCol <= board[0].length - 3; startCol++) {
+        const match = variation.every(pos => {
+          const row = startRow + pos.r;
+          const col = startCol + pos.c;
+          const cell = board[row]?.[col];
+          
+          // Check if cell exists and matches player and color
+          return cell && 
+                 cell.player === player && 
+                 cell.color === targetColor;
+        });
+        
+        if (match) {
+          return {
+            name: patternName,
+            positions: variation.map(pos => ({
+              row: startRow + pos.r,
+              col: startCol + pos.c
+            }))
+          };
+        }
+      }
+    }
+  }
+  
+  return null;
+}
+
+// Check all patterns for a win with color awareness
+export function checkWinConditionWithColor(board, player, patterns, targetColor) {
+  for (const patternName of patterns) {
+    const result = checkPatternWinWithColor(board, player, patternName, targetColor);
+    if (result) return result;
+  }
+  return null;
+}
+
+// Check for any win condition for a player (any color)
+export function checkWinConditionAnyColor(board, player, patterns) {
+  // Get all possible colors for this player
+  const playerColors = player === 'red' ? ['#FF4136', '#FF851B'] : ['#B10DC9', '#2ECC40'];
+  
+  for (const color of playerColors) {
+    const result = checkWinConditionWithColor(board, player, patterns, color);
+    if (result) return result;
+  }
+  
+  return null;
 } 
