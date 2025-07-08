@@ -3,8 +3,6 @@ import { motion } from "framer-motion";
 import { 
   getCurrentColor, 
   getCurrentColorName, 
-  getNextColor, 
-  getNextColorName, 
   getPlayerName,
   getPlayerShape,
   PLAYER_CONFIG 
@@ -23,8 +21,6 @@ export default function PlayerIndicator({
   
   const currentColor = getCurrentColor(currentPlayer, turnCount);
   const currentColorName = getCurrentColorName(currentPlayer, turnCount);
-  const nextColor = getNextColor(currentPlayer, turnCount);
-  const nextColorName = getNextColorName(currentPlayer, turnCount);
   const playerShape = getPlayerShape(currentPlayer);
   
   if (!isGameActive) return null;
@@ -62,17 +58,7 @@ export default function PlayerIndicator({
           </div>
         </div>
         
-        {/* Next color indicator */}
-        <div className="flex items-center gap-2 text-sm text-slate-400">
-          <span>Next:</span>
-          <div 
-            className={`w-6 h-6 ${
-              playerShape === "circle" ? "rounded-full" : "rounded"
-            }`}
-            style={{ backgroundColor: nextColor }}
-          />
-          <span>{nextColorName}</span>
-        </div>
+
       </div>
     </motion.div>
   );

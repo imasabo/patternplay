@@ -84,7 +84,32 @@ export function checkPatternWin(board, player, patternName) {
   const pattern = PATTERN_BANK[patternName];
   if (!pattern) return null;
   
-  for (const variation of pattern.variations) {
+  // Generate all possible variations for this pattern
+  const allVariations = [];
+  
+  // Add predefined variations
+  allVariations.push(...pattern.variations);
+  
+  // Generate additional rotations and reflections for each predefined variation
+  for (const baseVariation of pattern.variations) {
+    const generatedVariations = generateAllVariations(baseVariation);
+    allVariations.push(...generatedVariations);
+  }
+  
+  // Remove duplicates
+  const uniqueVariations = [];
+  const seenKeys = new Set();
+  
+  for (const variation of allVariations) {
+    const key = variation.map(pos => `${pos.r},${pos.c}`).sort().join('|');
+    if (!seenKeys.has(key)) {
+      seenKeys.add(key);
+      uniqueVariations.push(variation);
+    }
+  }
+  
+  // Check each unique variation
+  for (const variation of uniqueVariations) {
     for (let startRow = 0; startRow <= board.length - 3; startRow++) {
       for (let startCol = 0; startCol <= board[0].length - 3; startCol++) {
         const match = variation.every(pos => {
@@ -118,12 +143,98 @@ export function checkWinCondition(board, player, patterns) {
   return null;
 }
 
+// Helper function to generate all rotations and reflections of a pattern
+function generateAllVariations(basePattern) {
+  const variations = [];
+  
+  // Get the bounding box of the pattern
+  const minRow = Math.min(...basePattern.map(pos => pos.r));
+  const maxRow = Math.max(...basePattern.map(pos => pos.r));
+  const minCol = Math.min(...basePattern.map(pos => pos.c));
+  const maxCol = Math.max(...basePattern.map(pos => pos.c));
+  const width = maxCol - minCol + 1;
+  const height = maxRow - minRow + 1;
+  
+  // Normalize the pattern to start at (0,0)
+  const normalizedPattern = basePattern.map(pos => ({
+    r: pos.r - minRow,
+    c: pos.c - minCol
+  }));
+  
+  // Generate all 8 variations (4 rotations × 2 reflections)
+  for (let rotation = 0; rotation < 4; rotation++) {
+    for (let reflection = 0; reflection < 2; reflection++) {
+      let transformedPattern = [...normalizedPattern];
+      
+      // Apply rotation
+      for (let i = 0; i < rotation; i++) {
+        transformedPattern = transformedPattern.map(pos => ({
+          r: pos.c,
+          c: height - 1 - pos.r
+        }));
+      }
+      
+      // Apply reflection (horizontal flip)
+      if (reflection === 1) {
+        transformedPattern = transformedPattern.map(pos => ({
+          r: pos.r,
+          c: width - 1 - pos.c
+        }));
+      }
+      
+      // Normalize again to ensure it starts at (0,0)
+      const newMinRow = Math.min(...transformedPattern.map(pos => pos.r));
+      const newMinCol = Math.min(...transformedPattern.map(pos => pos.c));
+      const finalPattern = transformedPattern.map(pos => ({
+        r: pos.r - newMinRow,
+        c: pos.c - newMinCol
+      }));
+      
+      // Add to variations if it's unique
+      const patternKey = finalPattern.map(pos => `${pos.r},${pos.c}`).sort().join('|');
+      if (!variations.some(v => v.key === patternKey)) {
+        variations.push({
+          positions: finalPattern,
+          key: patternKey
+        });
+      }
+    }
+  }
+  
+  return variations.map(v => v.positions);
+}
+
 // New color-aware pattern checking functions
 export function checkPatternWinWithColor(board, player, patternName, targetColor) {
   const pattern = PATTERN_BANK[patternName];
   if (!pattern) return null;
   
-  for (const variation of pattern.variations) {
+  // Generate all possible variations for this pattern
+  const allVariations = [];
+  
+  // Add predefined variations
+  allVariations.push(...pattern.variations);
+  
+  // Generate additional rotations and reflections for each predefined variation
+  for (const baseVariation of pattern.variations) {
+    const generatedVariations = generateAllVariations(baseVariation);
+    allVariations.push(...generatedVariations);
+  }
+  
+  // Remove duplicates
+  const uniqueVariations = [];
+  const seenKeys = new Set();
+  
+  for (const variation of allVariations) {
+    const key = variation.map(pos => `${pos.r},${pos.c}`).sort().join('|');
+    if (!seenKeys.has(key)) {
+      seenKeys.add(key);
+      uniqueVariations.push(variation);
+    }
+  }
+  
+  // Check each unique variation
+  for (const variation of uniqueVariations) {
     for (let startRow = 0; startRow <= board.length - 3; startRow++) {
       for (let startCol = 0; startCol <= board[0].length - 3; startCol++) {
         const match = variation.every(pos => {

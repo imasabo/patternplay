@@ -11,8 +11,6 @@ import {
   createTile, 
   getCurrentColor, 
   getCurrentColorName,
-  getNextColor,
-  getNextColorName,
   getPlayerName,
   PLAYER_CONFIG 
 } from "../utils/colorRotation.js";
