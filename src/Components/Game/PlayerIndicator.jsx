@@ -40,12 +40,10 @@ export default function PlayerIndicator({
               playerShape === "circle" ? "rounded-full" : "rounded-lg"
             }`}
             style={{ backgroundColor: currentColor }}
-            animate={{ scale: [1, 1.1, 1] }}
+            animate={{ scale: [1, 1.1, 1], opacity: 1 }}
             transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
             key={`${currentPlayer}-${currentColor}`}
             initial={{ scale: 0.8, opacity: 0.8 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.3 }}
           />
           
           <div className="text-left">
